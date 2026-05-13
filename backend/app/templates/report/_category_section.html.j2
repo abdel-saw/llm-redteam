@@ -1,0 +1,43 @@
+{# Section dépliable pour une catégorie OWASP. #}
+<details class="category">
+  <summary>
+    <span>
+      <span class="cat-code">{{ cat.code }}</span>
+      &nbsp;{{ cat.label }}
+    </span>
+    <span>
+      <span class="badge v-success">{{ cat.success }} / {{ cat.total }}</span>
+      <span class="strategy">{{ '%.0f' % (cat.success_rate * 100) }}% success</span>
+    </span>
+  </summary>
+
+  <div class="body">
+    <p>{{ cat.description }}</p>
+
+    <table class="meta-table" style="max-width: 460px;">
+      <tr><th>Total attempts</th><td>{{ cat.total }}</td></tr>
+      <tr><th>Successful</th><td>{{ cat.success }}</td></tr>
+      <tr><th>Partial</th><td>{{ cat.partial }}</td></tr>
+      <tr><th>Failed</th><td>{{ cat.failure }}</td></tr>
+      <tr><th>Errored</th><td>{{ cat.error }}</td></tr>
+    </table>
+
+    {% if cat.top_severe_attempts %}
+      <h4>Top successful attacks (by severity)</h4>
+      {% for attempt in cat.top_severe_attempts %}
+        {% include 'report/_attempt_detail.html.j2' %}
+      {% endfor %}
+    {% else %}
+      <p><em>No successful attack recorded in this category.</em></p>
+    {% endif %}
+
+    {% if cat.mitigations %}
+      <h4>Recommended mitigations</h4>
+      <ul>
+        {% for tip in cat.mitigations %}
+          <li>{{ tip }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</details>

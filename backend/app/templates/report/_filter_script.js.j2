@@ -1,0 +1,47 @@
+/* Filtres client de la table des tentatives. Pas de dépendance externe. */
+(function () {
+  var tbody = document.querySelector("#attempts-table tbody");
+  if (!tbody) return;
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr[data-attempt]"));
+  var catSel = document.getElementById("f-category");
+  var verSel = document.getElementById("f-verdict");
+  var sevSel = document.getElementById("f-severity");
+  var qInput = document.getElementById("f-search");
+  var counter = document.getElementById("f-counter");
+  var resetBtn = document.getElementById("f-reset");
+
+  function apply() {
+    var cat = catSel ? catSel.value : "";
+    var ver = verSel ? verSel.value : "";
+    var sev = sevSel ? sevSel.value : "";
+    var q = (qInput ? qInput.value : "").trim().toLowerCase();
+    var shown = 0;
+    rows.forEach(function (r) {
+      var ok = true;
+      if (cat && r.dataset.category !== cat) ok = false;
+      if (ok && ver && r.dataset.verdict !== ver) ok = false;
+      if (ok && sev && r.dataset.severity !== sev) ok = false;
+      if (ok && q) {
+        var hay = (r.textContent || "").toLowerCase();
+        if (hay.indexOf(q) === -1) ok = false;
+      }
+      r.classList.toggle("hidden", !ok);
+      if (ok) shown++;
+    });
+    if (counter) counter.textContent = shown + " / " + rows.length;
+  }
+
+  [catSel, verSel, sevSel].forEach(function (el) {
+    if (el) el.addEventListener("change", apply);
+  });
+  if (qInput) qInput.addEventListener("input", apply);
+  if (resetBtn) resetBtn.addEventListener("click", function () {
+    if (catSel) catSel.value = "";
+    if (verSel) verSel.value = "";
+    if (sevSel) sevSel.value = "";
+    if (qInput) qInput.value = "";
+    apply();
+  });
+
+  apply();
+})();

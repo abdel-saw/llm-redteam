@@ -198,6 +198,17 @@ class AttackEngine:
             db_scan.robustness_score = score
             s.commit()
 
+        # 5bis) Génération automatique du rapport HTML — best-effort.
+        # Un échec ici ne doit pas changer le statut du scan : le rapport
+        # sera regénéré à la demande quand l'utilisateur le consultera.
+        try:
+            from .report import get_report_generator
+            generator = get_report_generator()
+            with self.SessionLocal() as s:
+                await generator.generate(scan_id, s)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Auto-report generation failed for scan %d: %s", scan_id, exc)
+
         await emit(ScanEvent("scan_completed", _now(), {
             "scan_id": scan_id,
             "total_attempts": total_done,

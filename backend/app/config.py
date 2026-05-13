@@ -37,9 +37,14 @@ class Settings(BaseSettings):
 
     # --- Persistance ---
     database_url: str = Field(default="sqlite:///./redteam.db")
+    reports_dir: str = Field(
+        default="./reports",
+        description="Dossier d'écriture des rapports HTML générés (un sous-dossier par scan).",
+    )
 
     # --- Environnement ---
     app_env: Literal["dev", "prod"] = Field(default="dev")
+    app_version: str = Field(default="0.1.0")
 
     @property
     def is_dev(self) -> bool:

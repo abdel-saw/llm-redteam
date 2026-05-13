@@ -6,14 +6,15 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..enums import AttackCategory
-from ..models import Scan, Target
+from ..models import Report, Scan, Target
+from ..services.report import get_report_generator
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -69,6 +70,48 @@ async def scan_live(
             "scan": scan,
             "target": scan.target,
             "category_labels": CATEGORY_LABELS,
+        },
+    )
+
+
+@router.get("/scans/{scan_id}/report", response_class=HTMLResponse)
+async def scan_report(scan_id: int, db: Session = Depends(get_db)):
+    """Sert le rapport HTML standalone — génère à la volée s'il manque."""
+    scan = db.get(Scan, scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    report = db.query(Report).filter(Report.scan_id == scan_id).one_or_none()
+    if report is None:
+        # Génération synchrone à la demande (rendu Jinja, pas d'IO réseau).
+        generator = get_report_generator()
+        report = await generator.generate(scan_id, db)
+
+    return FileResponse(
+        path=report.html_path,
+        media_type="text/html",
+        filename=None,
+    )
+
+
+@router.get("/scans/{scan_id}/report/download", response_class=HTMLResponse)
+async def scan_report_download(scan_id: int, db: Session = Depends(get_db)):
+    scan = db.get(Scan, scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    report = db.query(Report).filter(Report.scan_id == scan_id).one_or_none()
+    if report is None:
+        generator = get_report_generator()
+        report = await generator.generate(scan_id, db)
+
+    return FileResponse(
+        path=report.html_path,
+        media_type="text/html",
+        filename=f"llm-rt-scan-{scan_id}-report.html",
+        headers={
+            "Content-Disposition":
+                f'attachment; filename="llm-rt-scan-{scan_id}-report.html"',
         },
     )
 

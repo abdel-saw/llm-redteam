@@ -14,9 +14,10 @@ from sqlalchemy.orm import Session
 
 from ..database import SessionLocal, get_db
 from ..enums import ScanStatus
-from ..models import Scan, Target
-from ..schemas import ScanCreate, ScanDetail, ScanSummary
+from ..models import Report, Scan, Target
+from ..schemas import ReportRead, ScanCreate, ScanDetail, ScanSummary
 from ..services.attack_engine import get_engine
+from ..services.report import get_report_generator
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -77,6 +78,47 @@ async def get_scan(scan_id: int, db: Session = Depends(get_db)) -> Scan:
         raise HTTPException(status_code=404, detail="Scan not found")
     # `scan.attempts` est chargé en lazy lors de la sérialisation Pydantic.
     return scan
+
+
+@router.post(
+    "/{scan_id}/report",
+    response_model=ReportRead,
+    summary="(Re)générer le rapport HTML d'un scan",
+)
+async def create_or_update_report(
+    scan_id: int, db: Session = Depends(get_db)
+) -> dict:
+    scan = db.get(Scan, scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    generator = get_report_generator()
+    report = await generator.generate(scan_id, db)
+    return _serialize_report(report)
+
+
+@router.get(
+    "/{scan_id}/report",
+    response_model=ReportRead,
+    summary="Métadonnées du rapport HTML d'un scan",
+)
+async def get_report_meta(scan_id: int, db: Session = Depends(get_db)) -> dict:
+    scan = db.get(Scan, scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    report = db.query(Report).filter(Report.scan_id == scan_id).one_or_none()
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not generated yet")
+    return _serialize_report(report)
+
+
+def _serialize_report(report: Report) -> dict:
+    return {
+        "id": report.id,
+        "scan_id": report.scan_id,
+        "html_path": report.html_path,
+        "html_url": f"/scans/{report.scan_id}/report",
+        "generated_at": report.generated_at,
+    }
 
 
 @router.post(

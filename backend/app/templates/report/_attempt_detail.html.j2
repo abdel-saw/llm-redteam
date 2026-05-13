@@ -1,0 +1,47 @@
+{# Bloc complet pour une tentative. Importé depuis standalone.html.j2. #}
+{% set verdict = (attempt.judgment.value if attempt.judgment else 'error') %}
+{% set severity = (attempt.severity.value if attempt.severity else 'low') %}
+<div id="attempt-{{ attempt.id }}" class="attempt v-{{ verdict }}">
+  <div class="hd">
+    <span class="badge cat">{{ attempt.category.value }}</span>
+    <span class="badge v-{{ verdict }}">{{ verdict }}</span>
+    <span class="badge sev-{{ severity }}">{{ severity }}</span>
+    <span class="strategy">{{ attempt.strategy_name }}</span>
+    {% if attempt.latency_ms is not none %}
+      <span class="strategy">{{ attempt.latency_ms }} ms</span>
+    {% endif %}
+    <span class="strategy">#{{ attempt.id }}</span>
+  </div>
+
+  <div class="field">
+    <div class="field-label">Attack prompt</div>
+    <pre>{{ attempt.attack_prompt | redact }}</pre>
+  </div>
+
+  {% if attempt.target_response %}
+    <div class="field">
+      <div class="field-label">Target response (first 500 chars)</div>
+      <pre>{{ attempt.target_response | redact | truncate_chars(500) }}</pre>
+      {% if attempt.target_response | length > 500 %}
+        <details>
+          <summary>Show full response ({{ attempt.target_response | length }} chars)</summary>
+          <pre>{{ attempt.target_response | redact }}</pre>
+        </details>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if attempt.judgment_reasoning %}
+    <div class="field">
+      <div class="field-label">Judge reasoning</div>
+      <div class="reasoning">{{ attempt.judgment_reasoning | redact }}</div>
+    </div>
+  {% endif %}
+
+  {% if attempt.error %}
+    <div class="field">
+      <div class="field-label">Error</div>
+      <div class="reasoning">{{ attempt.error | redact }}</div>
+    </div>
+  {% endif %}
+</div>

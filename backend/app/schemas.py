@@ -162,3 +162,16 @@ class ScanDetail(ScanRead):
     """Vue complète d'un scan : métadonnées + tentatives associées."""
 
     attempts: list[AttackAttemptRead] = Field(default_factory=list)
+
+
+# ----------------------------- Reports ---------------------------------------
+
+
+class ReportRead(BaseModel):
+    id: int
+    scan_id: int
+    html_path: str
+    html_url: str
+    generated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
