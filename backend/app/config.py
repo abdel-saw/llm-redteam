@@ -26,7 +26,14 @@ class Settings(BaseSettings):
     # --- Modèles ---
     attacker_model: str = Field(default="llama-3.3-70b-versatile")
     judge_model: str = Field(default="llama-3.3-70b-versatile")
-    guard_model: str = Field(default="meta-llama/llama-guard-4-12b")
+    guard_model: str = Field(default="openai/gpt-oss-safeguard-20b")
+    guard_mode: Literal["policy", "taxonomy"] = Field(
+        default="policy",
+        description=(
+            "Format du juge de sécurité. 'policy' = bring-your-own-policy "
+            "(GPT-OSS-Safeguard) ; 'taxonomy' = MLCommons safe/unsafe (Llama Guard)."
+        ),
+    )
 
     # --- Persistance ---
     database_url: str = Field(default="sqlite:///./redteam.db")
