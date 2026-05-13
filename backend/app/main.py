@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import init_db
+from .routes import targets as targets_routes
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -28,6 +29,8 @@ app = FastAPI(
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+app.include_router(targets_routes.router, prefix="/api/targets", tags=["targets"])
 
 
 @app.get("/", response_class=PlainTextResponse)
