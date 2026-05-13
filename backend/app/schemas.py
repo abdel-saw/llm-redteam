@@ -141,3 +141,9 @@ class AttackAttemptRead(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ScanDetail(ScanRead):
+    """Vue complète d'un scan : métadonnées + tentatives associées."""
+
+    attempts: list[AttackAttemptRead] = Field(default_factory=list)

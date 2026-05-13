@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -7,10 +8,16 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import init_db
+from .routes import scans as scans_routes
 from .routes import targets as targets_routes
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+
+logging.basicConfig(
+    level=logging.DEBUG if settings.is_dev else logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
 
 
 @asynccontextmanager
@@ -31,6 +38,7 @@ STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(targets_routes.router, prefix="/api/targets", tags=["targets"])
+app.include_router(scans_routes.router, prefix="/api/scans", tags=["scans"])
 
 
 @app.get("/", response_class=PlainTextResponse)
