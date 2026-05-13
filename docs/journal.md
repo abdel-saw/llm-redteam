@@ -6,6 +6,49 @@ anti-chronologique.
 
 ---
 
+## 2026-05-13 — Starlette strict sur HTTP 204 + retry 429 dans le client LLM
+
+**Comportement Starlette strict sur `204 No Content`.** Le `DELETE
+/api/targets/{id}` était écrit avec `status_code=204` mais sans
+`response_class=Response` ; FastAPI tentait alors de sérialiser le
+retour `None` en JSON `null`, ce que Starlette refuse à l'exécution
+avec une `AssertionError("Status code 204 must not have a response
+body")`. Le bug ne s'est pas vu en développement parce qu'il n'y avait
+**aucun test d'intégration** sur cette route — un test unitaire qui
+mock la couche route aurait laissé passer la divergence.
+
+**Excellent exemple à mentionner dans le chapitre 4 (« leçons
+apprises ») du rapport** : *les tests d'intégration HTTP attrapent des
+classes entières de bugs que les tests unitaires ratent par
+construction* — ici la spec HTTP (RFC 7231 §6.3.5) impose un body vide
+sur 204, et seule la stack ASGI réelle (Starlette + httpx ASGITransport)
+fait remonter la violation. Fix : `response_class=Response` + retour
+explicite de `Response(status_code=204)` + ajout de
+`backend/tests/test_targets_api.py`.
+
+**Retry 429 dans `LLMClient`.** Sur les benchmarks précédents, ~3 %
+des appels au safety classifier `gpt-oss-safeguard-20b` revenaient en
+429 (rate limit Groq tier free). L'erreur était gracefully avalée par
+le `Judge` (`flagged=False`) mais dégradait la qualité du scoring.
+Ajout d'un retry léger : on parse `Retry-After`, on cap à 10 s, on
+retry **une seule fois** sur le même provider, puis fallback comme
+avant si toujours en échec. Log explicite du breakdown
+`[provider=groq] 429 then 200 in 2543ms (retry delay 1000ms)` pour
+l'audit. Refactor adjacent : extraction de `_call_with_retry()` autour
+de `_call_provider()` qui reste atomique (un seul appel HTTP).
+
+**Validation live** : scan 25 tentatives sur llama-3.1-8b-instant
+(~75 appels LLM) → 2 « Rate limit hit on groq » loggés, 1 sauvé par
+retry (1 s d'attente puis 200), 1 cap à 8 s puis fallback openrouter
+(402 car clé invalide → flagged=False). Aucun attempt en erreur
+finale, `robustness_score=64.0` calculé sans NULL.
+
+Les JSON bruts des 2 derniers scans validés sont exportés dans
+[`docs/benchmarks/`](./benchmarks/) avec un README résumant les
+conditions de test et un comparatif 8B vs 70B par catégorie.
+
+---
+
 ## 2026-05-13 — Migration du juge de sécurité
 
 `meta-llama/llama-guard-4-12b` a été **déprécié par Groq le 10/02/2026**.

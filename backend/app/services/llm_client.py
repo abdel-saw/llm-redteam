@@ -4,11 +4,17 @@ Supporte Groq et OpenRouter via httpx direct. En cas d'échec du provider
 principal, bascule automatiquement sur l'autre. Le format de requête est
 OpenAI-compatible côté `messages` et `response_format`.
 
+Retry policy sur 429 : un seul retry est tenté sur le même provider,
+après avoir respecté le header `Retry-After` (cappé à 10 s pour ne pas
+geler un scan si l'API renvoie une valeur fantaisiste). Si le retry
+échoue encore, on bascule sur le provider suivant comme avant.
+
 `get_llm_client()` retourne un singleton lazy-initialisé.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from dataclasses import dataclass
@@ -27,6 +33,8 @@ PROVIDER_ENDPOINTS: dict[str, str] = {
 }
 
 DEFAULT_TIMEOUT_S = 60.0
+DEFAULT_RETRY_AFTER_S = 2.0
+MAX_RETRY_AFTER_S = 10.0
 
 
 @dataclass
@@ -63,7 +71,7 @@ class LLMClient:
                 logger.info("Skipping %s (no API key configured)", provider)
                 continue
             try:
-                return await self._call_provider(
+                return await self._call_with_retry(
                     provider, api_key, chosen_model, messages,
                     temperature, max_tokens, response_format,
                 )
@@ -79,6 +87,53 @@ class LLMClient:
         raise LLMUnavailableError(
             f"All providers exhausted. Last error: {last_error}"
         )
+
+    async def _call_with_retry(
+        self,
+        provider: str,
+        api_key: str,
+        model: str,
+        messages: list[dict],
+        temperature: float,
+        max_tokens: int,
+        response_format: Optional[dict],
+    ) -> LLMResponse:
+        """Appelle un provider avec UN seul retry sur 429.
+
+        Le retry respecte le header `Retry-After` (cap MAX_RETRY_AFTER_S).
+        Sur toute autre erreur, on remonte immédiatement à l'appelant pour
+        que le fallback provider prenne le relais sans temporisation.
+        """
+        try:
+            return await self._call_provider(
+                provider, api_key, model, messages,
+                temperature, max_tokens, response_format,
+            )
+        except LLMRateLimitError as first_429:
+            delay = min(
+                first_429.retry_after if first_429.retry_after is not None
+                else DEFAULT_RETRY_AFTER_S,
+                MAX_RETRY_AFTER_S,
+            )
+            logger.warning(
+                "Rate limit hit on %s, retrying in %.1fs", provider, delay
+            )
+            t_retry_start = time.perf_counter()
+            await asyncio.sleep(delay)
+            result = await self._call_provider(
+                provider, api_key, model, messages,
+                temperature, max_tokens, response_format,
+            )
+            # Le délai d'attente fait partie de la latence perçue par
+            # l'appelant — on cumule sleep + 2e appel, et on log un
+            # breakdown explicite pour l'audit.
+            total_ms = int((time.perf_counter() - t_retry_start) * 1000) + result.latency_ms
+            logger.info(
+                "[provider=%s] 429 then 200 in %dms (retry delay %dms)",
+                provider, total_ms, int(delay * 1000),
+            )
+            result.latency_ms = total_ms
+            return result
 
     def _api_key(self, provider: str) -> Optional[str]:
         if provider == "groq":
@@ -97,6 +152,7 @@ class LLMClient:
         max_tokens: int,
         response_format: Optional[dict],
     ) -> LLMResponse:
+        """Un seul appel HTTP vers le provider — pas de retry interne."""
         url = PROVIDER_ENDPOINTS[provider]
         body: dict = {
             "model": model,
@@ -125,7 +181,10 @@ class LLMClient:
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
         if resp.status_code == 429:
-            raise LLMRateLimitError(f"{provider} rate limited (429)")
+            retry_after = _parse_retry_after(resp.headers.get("Retry-After"))
+            raise LLMRateLimitError(
+                f"{provider} rate limited (429)", retry_after=retry_after
+            )
         resp.raise_for_status()
 
         try:
@@ -149,6 +208,19 @@ class LLMClient:
             tokens_in=usage.get("prompt_tokens"),
             tokens_out=usage.get("completion_tokens"),
         )
+
+
+def _parse_retry_after(header: Optional[str]) -> Optional[float]:
+    """Parse le header `Retry-After`. RFC 7231 : un entier de secondes, ou
+    une date HTTP. Pour le MVP on supporte uniquement la forme entière —
+    si la valeur est invalide ou absente, retourne None et l'appelant
+    utilise `DEFAULT_RETRY_AFTER_S`."""
+    if header is None:
+        return None
+    try:
+        return float(header.strip())
+    except (ValueError, AttributeError):
+        return None
 
 
 _instance: Optional[LLMClient] = None

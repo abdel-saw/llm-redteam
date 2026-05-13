@@ -6,6 +6,7 @@ import json
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -56,14 +57,19 @@ async def get_target(target_id: int, db: Session = Depends(get_db)) -> Target:
 @router.delete(
     "/{target_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
     summary="Supprimer une cible",
 )
-async def delete_target(target_id: int, db: Session = Depends(get_db)) -> None:
+async def delete_target(target_id: int, db: Session = Depends(get_db)) -> Response:
+    # 204 No Content : Starlette refuse strictement tout body sur ce status.
+    # On force un Response vide (sans response_model) pour ne pas laisser
+    # FastAPI sérialiser un `null` JSON quand la fonction retourne None.
     target = db.get(Target, target_id)
     if target is None:
         raise HTTPException(status_code=404, detail="Target not found")
     db.delete(target)
     db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
