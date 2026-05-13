@@ -46,15 +46,42 @@ class Target(Base):
     )
 
     @property
-    def headers(self) -> Optional[dict[str, str]]:
-        """Vue désérialisée de `headers_json`. None si vide."""
+    def headers_preview(self) -> dict[str, str]:
+        """Vue redactée des headers — sûre à exposer publiquement.
+
+        Les valeurs des en-têtes sensibles (Authorization, X-API-Key…) sont
+        remplacées par `***REDACTED***`. Les en-têtes non sensibles passent
+        tels quels. Vide si `headers_json` est null ou invalide.
+        """
+        # Import local pour éviter une dépendance circulaire au boot.
+        from .security.redaction import redact_headers
+
         if not self.headers_json:
-            return None
+            return {}
         try:
             value = json.loads(self.headers_json)
         except json.JSONDecodeError:
-            return None
-        return value if isinstance(value, dict) else None
+            return {}
+        if not isinstance(value, dict):
+            return {}
+        coerced = {str(k): str(v) for k, v in value.items()}
+        return redact_headers(coerced)
+
+    @property
+    def has_auth(self) -> bool:
+        """True si au moins un en-tête sensible non vide est configuré."""
+        from .security.redaction import SENSITIVE_HEADER_NAMES
+
+        if not self.headers_json:
+            return False
+        try:
+            value = json.loads(self.headers_json)
+        except json.JSONDecodeError:
+            return False
+        if not isinstance(value, dict):
+            return False
+        sensitive = {h.lower() for h in SENSITIVE_HEADER_NAMES}
+        return any(str(k).lower() in sensitive and v for k, v in value.items())
 
 
 class Scan(Base):

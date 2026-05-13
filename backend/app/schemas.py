@@ -31,13 +31,20 @@ class TargetBase(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     target_type: TargetType
     endpoint_url: str = Field(min_length=1, max_length=1024)
-    headers: Optional[dict[str, str]] = None
     request_template: Optional[str] = None
     response_path: Optional[str] = None
     model_name: Optional[str] = None
 
 
 class TargetCreate(TargetBase):
+    """Body d'entrée pour POST /api/targets.
+
+    `headers` accepte les secrets en clair ; ils sont stockés en base et
+    JAMAIS renvoyés en clair par l'API (cf. `TargetRead`).
+    """
+
+    headers: Optional[dict[str, str]] = None
+
     @model_validator(mode="after")
     def _check_conditional_fields(self) -> "TargetCreate":
         if self.target_type == TargetType.JSON_CUSTOM:
@@ -56,8 +63,16 @@ class TargetCreate(TargetBase):
 
 
 class TargetRead(TargetBase):
+    """Vue publique d'une cible : aucun secret en clair.
+
+    `headers_preview` masque les valeurs des en-têtes sensibles ; `has_auth`
+    indique simplement la présence d'un Authorization / API key.
+    """
+
     id: int
     created_at: datetime
+    headers_preview: dict[str, str] = Field(default_factory=dict)
+    has_auth: bool = False
 
     model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 

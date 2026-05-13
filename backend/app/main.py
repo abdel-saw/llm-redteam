@@ -2,14 +2,15 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import init_db
 from .routes import scans as scans_routes
 from .routes import targets as targets_routes
+from .security.log_filter import install_redacting_filter
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -18,6 +19,7 @@ logging.basicConfig(
     level=logging.DEBUG if settings.is_dev else logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
 )
+install_redacting_filter()
 
 
 @asynccontextmanager
@@ -39,6 +41,22 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.include_router(targets_routes.router, prefix="/api/targets", tags=["targets"])
 app.include_router(scans_routes.router, prefix="/api/scans", tags=["scans"])
+
+
+_SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
+}
+
+
+@app.middleware("http")
+async def security_headers_middleware(request: Request, call_next) -> Response:
+    response = await call_next(request)
+    for name, value in _SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
 
 
 @app.get("/", response_class=PlainTextResponse)
