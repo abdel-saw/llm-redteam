@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}LLM-RT — Scan #{{ scan.id }} en direct{% endblock %}
+
+{% block content %}
+<section class="mb-6 flex items-start justify-between flex-wrap gap-4">
+  <div>
+    <a href="/history" class="text-xs text-gray-500 hover:text-primary">&larr; Historique</a>
+    <h1 class="text-2xl font-bold mt-1">Scan #{{ scan.id }}</h1>
+    <p class="text-sm text-gray-600">Cible&nbsp;: <span class="font-mono">{{ target.name }}</span>
+      &middot; modèle&nbsp;: <span class="font-mono">{{ target.model_name or "n/a" }}</span></p>
+  </div>
+  <div class="flex items-center gap-3">
+    <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+      {{ scan.status.value }}
+    </span>
+    <button id="abort-btn" type="button"
+            class="text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-100 transition">
+      Interrompre
+    </button>
+  </div>
+</section>
+
+<!-- Bandeau de progression -->
+<section class="bg-white rounded-xl shadow-sm p-5 mb-6">
+  <div class="flex items-baseline justify-between mb-2">
+    <h2 class="font-semibold text-gray-800">Progression</h2>
+    <span id="progress-text" class="text-sm font-mono text-gray-600">0 / {{ scan.selected_categories|length * scan.max_attempts_per_category }}</span>
+  </div>
+  <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+    <div id="progress-bar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
+  </div>
+  <div class="grid grid-cols-3 gap-4 mt-4 text-center">
+    <div>
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Catégorie en cours</div>
+      <div id="current-category" class="font-mono text-sm mt-1">—</div>
+    </div>
+    <div>
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Attaques réussies</div>
+      <div id="success-counter" class="text-3xl font-bold text-primary mt-1">0</div>
+    </div>
+    <div>
+      <div class="text-xs text-gray-500 uppercase tracking-wide">Score estimé</div>
+      <div id="score-estimate" class="text-3xl font-bold text-gray-700 mt-1">—</div>
+    </div>
+  </div>
+</section>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <!-- Sidebar : breakdown -->
+  <aside class="lg:col-span-1">
+    <div class="bg-white rounded-xl shadow-sm p-5 sticky top-4">
+      <h3 class="font-semibold mb-3">Par catégorie</h3>
+      <ul class="space-y-2 text-sm">
+        {% for cat in scan.selected_categories %}
+          <li class="flex items-center justify-between" data-cat="{{ cat.value }}">
+            <span class="text-gray-700">{{ category_labels.get(cat.value, cat.value) }}</span>
+            <span class="font-mono text-xs">
+              <span class="cat-success">0</span>/<span class="cat-total">0</span>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <noscript>
+      <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
+        JavaScript est requis pour le suivi temps réel.
+        <a class="underline" href="/scans/{{ scan.id }}/live">Rafraîchir la page</a>.
+      </div>
+    </noscript>
+  </aside>
+
+  <!-- Feed central -->
+  <section class="lg:col-span-2">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold">Tentatives</h2>
+      <span class="text-xs text-gray-500">plus récente en haut</span>
+    </div>
+    <div id="attempt-feed" class="space-y-3">
+      <div id="feed-placeholder" class="text-sm text-gray-400 italic">En attente du flux d'événements…</div>
+    </div>
+  </section>
+</div>
+
+<!-- Actions de fin de scan -->
+<section id="finished-actions" class="mt-8 bg-white rounded-xl shadow-sm p-6 hidden">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <h2 class="text-lg font-semibold">Scan terminé</h2>
+      <p class="text-sm text-gray-600">
+        Score de robustesse final&nbsp;:
+        <span id="final-score" class="font-mono font-bold">—</span>
+        &middot; durée&nbsp;:
+        <span id="final-duration" class="font-mono">—</span>
+      </p>
+    </div>
+    <a id="report-link" href="#" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition">
+      Voir le rapport
+    </a>
+  </div>
+</section>
+
+<script>
+  window.SCAN_ID = {{ scan.id }};
+  window.SCAN_INITIAL_STATUS = "{{ scan.status.value }}";
+</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/scan_stream.js"></script>
+{% endblock %}

@@ -3,12 +3,14 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .config import settings
 from .database import init_db
+from .routes import pages as pages_routes
 from .routes import scans as scans_routes
+from .routes import stream as stream_routes
 from .routes import targets as targets_routes
 from .security.log_filter import install_redacting_filter
 
@@ -39,8 +41,13 @@ app = FastAPI(
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
+# Routes API
 app.include_router(targets_routes.router, prefix="/api/targets", tags=["targets"])
 app.include_router(scans_routes.router, prefix="/api/scans", tags=["scans"])
+app.include_router(stream_routes.router, prefix="/api/scans", tags=["stream"])
+
+# Routes UI (server-rendered)
+app.include_router(pages_routes.router, tags=["ui"])
 
 
 _SECURITY_HEADERS = {
@@ -57,8 +64,3 @@ async def security_headers_middleware(request: Request, call_next) -> Response:
     for name, value in _SECURITY_HEADERS.items():
         response.headers.setdefault(name, value)
     return response
-
-
-@app.get("/", response_class=PlainTextResponse)
-async def root() -> str:
-    return "LLM-RT MVP - up and running"

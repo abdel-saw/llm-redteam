@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}LLM-RT — Historique des scans{% endblock %}
+
+{% block content %}
+<section class="mb-6 flex items-baseline justify-between">
+  <h1 class="text-2xl font-bold">Historique des scans</h1>
+  <span class="text-xs text-gray-500" id="auto-refresh-status"></span>
+</section>
+
+{% if scans|length == 0 %}
+  <div class="bg-white rounded-xl shadow-sm p-12 text-center text-gray-500">
+    Aucun scan pour l'instant.
+    <a href="/" class="text-primary hover:underline">Configurer un premier scan &rarr;</a>
+  </div>
+{% else %}
+<div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wide">
+      <tr>
+        <th class="px-4 py-3 text-left">#</th>
+        <th class="px-4 py-3 text-left">Cible</th>
+        <th class="px-4 py-3 text-left">Date</th>
+        <th class="px-4 py-3 text-left">Statut</th>
+        <th class="px-4 py-3 text-right">Tentatives</th>
+        <th class="px-4 py-3 text-right">Succès</th>
+        <th class="px-4 py-3 text-right">Score</th>
+        <th class="px-4 py-3 text-left">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for s in scans %}
+      <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-mono text-xs">{{ s.id }}</td>
+        <td class="px-4 py-3">{{ s.target.name }}</td>
+        <td class="px-4 py-3 text-gray-500">{{ s.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td class="px-4 py-3">
+          {% set st = s.status.value %}
+          {% set badge = {
+            'pending': 'bg-gray-100 text-gray-700',
+            'running': 'bg-blue-100 text-blue-800',
+            'completed': 'bg-green-100 text-green-800',
+            'failed': 'bg-red-100 text-red-800',
+            'aborted': 'bg-yellow-100 text-yellow-800',
+          } %}
+          <span class="px-2 py-1 rounded-full text-xs font-semibold {{ badge.get(st, 'bg-gray-100') }}">{{ st }}</span>
+        </td>
+        <td class="px-4 py-3 text-right font-mono">{{ s.total_attempts }}</td>
+        <td class="px-4 py-3 text-right font-mono text-primary font-semibold">{{ s.successful_attacks }}</td>
+        <td class="px-4 py-3 text-right font-mono">
+          {% if s.robustness_score is not none %}{{ s.robustness_score }}{% else %}—{% endif %}
+        </td>
+        <td class="px-4 py-3">
+          <a href="/scans/{{ s.id }}/live" class="text-primary hover:underline">
+            {% if s.status.value == 'running' %}suivre{% else %}voir{% endif %}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Auto-rafraîchissement si au moins un scan est en cours.
+  (function () {
+    const hasRunning = document.querySelector('span.bg-blue-100.text-blue-800') !== null;
+    const statusEl = document.getElementById('auto-refresh-status');
+    if (hasRunning) {
+      statusEl.textContent = 'Rafraîchissement auto toutes les 5 s';
+      setTimeout(() => window.location.reload(), 5000);
+    }
+  })();
+</script>
+{% endblock %}

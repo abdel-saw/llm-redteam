@@ -96,7 +96,11 @@ async def abort_scan(scan_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 async def _run_scan_safely(scan_id: int) -> None:
-    """Wrapper du run_scan : marque le scan failed si exception non rattrapée."""
+    """Wrapper du run_scan : marque le scan failed si exception non rattrapée.
+
+    Publie également un event `scan_failed` puis ferme le flux côté bus,
+    pour que les clients SSE soient informés et puissent se déconnecter.
+    """
     try:
         engine = get_engine()
         await engine.run_scan(scan_id)
@@ -112,3 +116,17 @@ async def _run_scan_safely(scan_id: int) -> None:
                     s.commit()
         except Exception as inner:  # noqa: BLE001
             logger.exception("Failed to mark scan %d as failed: %s", scan_id, inner)
+
+        # Imports locaux : évite tout cycle au module-load.
+        from ..services.attack_engine import ScanEvent
+        from ..services.event_bus import get_event_bus
+
+        bus = get_event_bus()
+        try:
+            await bus.publish(scan_id, ScanEvent(
+                "scan_failed",
+                datetime.now(timezone.utc),
+                {"scan_id": scan_id, "error_message": str(exc)},
+            ))
+        finally:
+            await bus.close_scan(scan_id)

@@ -1,0 +1,26 @@
+{# Champs dynamiques du formulaire de cible (swap HTMX selon target_type). #}
+{% if target_type == "text" %}
+  <p class="text-xs text-gray-500 mb-3">Cible HTTP qui répond avec du texte brut au prompt envoyé en body.</p>
+{% elif target_type == "json_custom" %}
+  <div class="mb-3">
+    <label class="block text-sm font-medium mb-1">Template de requête (JSON)</label>
+    <textarea name="request_template" rows="3" required
+              class="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+              placeholder='{"input": {{ "{{prompt}}" }}, "version": 1}'>{{ "{\"input\": {{prompt}}, \"version\": 1}" }}</textarea>
+    <p class="text-xs text-gray-500 mt-1">Utilisez <code class="bg-gray-100 px-1 rounded">{{ "{{prompt}}" }}</code> (non quoté) à l'endroit où le prompt doit être injecté.</p>
+  </div>
+  <div class="mb-3">
+    <label class="block text-sm font-medium mb-1">Chemin JSONPath de la réponse</label>
+    <input type="text" name="response_path" required value="$.output"
+           class="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+           placeholder="$.data.text" />
+  </div>
+{% elif target_type == "openai_compatible" %}
+  <div class="mb-3">
+    <label class="block text-sm font-medium mb-1">Nom du modèle</label>
+    <input type="text" name="model_name" required value="llama-3.1-8b-instant"
+           class="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+           placeholder="llama-3.1-8b-instant" />
+    <p class="text-xs text-gray-500 mt-1">Ex : <code class="bg-gray-100 px-1 rounded">llama-3.1-8b-instant</code>, <code class="bg-gray-100 px-1 rounded">gpt-4o-mini</code>.</p>
+  </div>
+{% endif %}

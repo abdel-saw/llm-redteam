@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}LLM-RT — Configurer un scan{% endblock %}
+
+{% block content %}
+<section class="mb-10">
+  <h1 class="text-3xl font-bold mb-2">Agent autonome de Red Teaming pour LLM</h1>
+  <p class="text-gray-600 max-w-3xl">
+    Configurez une cible LLM, lancez un scan d'attaques alignées sur l'OWASP LLM Top&nbsp;10,
+    et observez les tentatives en temps réel. Chaque réponse est jugée par un modèle juge
+    sémantique combiné à Llama&nbsp;Guard.
+  </p>
+</section>
+
+<div class="grid lg:grid-cols-2 gap-6">
+  <!-- ÉTAPE 1 : configuration de la cible -->
+  <section class="bg-white rounded-xl shadow-sm p-6">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-midnight text-white text-sm font-bold">1</span>
+      <h2 class="text-xl font-semibold">Configurer la cible</h2>
+    </div>
+    <form id="target-form" class="space-y-4" autocomplete="off">
+      <div>
+        <label class="block text-sm font-medium mb-1">Nom de la cible</label>
+        <input type="text" name="name" required maxlength="120"
+               class="w-full px-3 py-2 border rounded-lg text-sm"
+               placeholder="Mon assistant interne" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Type de cible</label>
+        <select name="target_type"
+                hx-get="/target-form-fields"
+                hx-trigger="change"
+                hx-target="#dynamic-fields"
+                hx-include="this"
+                class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+          <option value="openai_compatible" selected>OpenAI-compatible (Groq, vLLM…)</option>
+          <option value="json_custom">JSON custom (template + JSONPath)</option>
+          <option value="text">Texte brut</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Endpoint URL</label>
+        <input type="url" name="endpoint_url" required
+               class="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+               value="https://api.groq.com/openai/v1"
+               placeholder="https://…" />
+      </div>
+      <div id="dynamic-fields">
+        {% include "components/target_form_fields.html" %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">Headers HTTP (JSON)</label>
+        <textarea id="headers-textarea" rows="3"
+                  class="w-full px-3 py-2 border rounded-lg text-sm font-mono"
+                  placeholder='{"Authorization": "Bearer …"}'></textarea>
+        <p class="text-xs text-gray-500 mt-1">La clé n'est jamais réaffichée par l'API — seul <code class="bg-gray-100 px-1 rounded">has_auth: true</code> et un placeholder masqué sont renvoyés.</p>
+      </div>
+      <div class="flex gap-2">
+        <button type="submit"
+                class="flex-1 bg-midnight text-white py-2 rounded-lg text-sm font-medium hover:bg-black transition">
+          Enregistrer la cible
+        </button>
+        <button type="button" id="test-target-btn" disabled
+                class="flex-1 bg-gray-200 text-gray-500 py-2 rounded-lg text-sm font-medium cursor-not-allowed">
+          Tester la connexion
+        </button>
+      </div>
+      <div id="target-result" class="text-sm"></div>
+    </form>
+  </section>
+
+  <!-- ÉTAPE 2 : configuration du scan (verrouillée tant que la cible n'est pas créée) -->
+  <section id="scan-section" class="bg-white rounded-xl shadow-sm p-6 opacity-50 pointer-events-none transition">
+    <div class="flex items-center gap-2 mb-4">
+      <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-midnight text-white text-sm font-bold">2</span>
+      <h2 class="text-xl font-semibold">Configurer et lancer le scan</h2>
+    </div>
+    <form id="scan-form" class="space-y-4">
+      <input type="hidden" name="target_id" id="scan-target-id" value="" />
+      <fieldset>
+        <legend class="block text-sm font-medium mb-2">Catégories d'attaque</legend>
+        <div class="space-y-2">
+          {% for value, label in category_labels.items() %}
+            <label class="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="selected_categories" value="{{ value }}" checked class="mt-0.5" />
+              <span><span class="font-medium">{{ label }}</span></span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+      <div>
+        <label class="block text-sm font-medium mb-1">
+          Tentatives par catégorie : <span id="max-attempts-value" class="font-mono">5</span>
+        </label>
+        <input type="range" name="max_attempts_per_category" min="1" max="10" value="5"
+               oninput="document.getElementById('max-attempts-value').textContent = this.value"
+               class="w-full" />
+        <p class="text-xs text-gray-500 mt-1">Plus le nombre est élevé, plus le scan est long et coûteux en tokens.</p>
+      </div>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm">
+        <label class="flex items-start gap-2">
+          <input type="checkbox" id="consent-checkbox" class="mt-1" />
+          <span>Je certifie être autorisé à tester l'endpoint configuré (ma propre application LLM, environnement de test, ou autorisation écrite du propriétaire).</span>
+        </label>
+      </div>
+      <button type="submit" id="launch-scan-btn" disabled
+              class="w-full bg-primary text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-dark transition disabled:bg-gray-300 disabled:cursor-not-allowed">
+        Lancer le scan
+      </button>
+      <div id="scan-result" class="text-sm"></div>
+    </form>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const targetForm = document.getElementById('target-form');
+  const targetResult = document.getElementById('target-result');
+  const headersTextarea = document.getElementById('headers-textarea');
+  const testBtn = document.getElementById('test-target-btn');
+  const scanSection = document.getElementById('scan-section');
+  const scanTargetIdInput = document.getElementById('scan-target-id');
+  const scanForm = document.getElementById('scan-form');
+  const scanResult = document.getElementById('scan-result');
+  const consentCheckbox = document.getElementById('consent-checkbox');
+  const launchBtn = document.getElementById('launch-scan-btn');
+  let currentTargetId = null;
+
+  consentCheckbox.addEventListener('change', () => {
+    launchBtn.disabled = !consentCheckbox.checked || !currentTargetId;
+  });
+
+  function setMessage(el, text, kind) {
+    const colors = {
+      ok: 'text-green-700 bg-green-50 border-green-200',
+      err: 'text-red-700 bg-red-50 border-red-200',
+      info: 'text-blue-700 bg-blue-50 border-blue-200',
+    };
+    el.innerHTML = `<div class="mt-2 p-3 border rounded-lg ${colors[kind] || ''}">${text}</div>`;
+  }
+
+  function escapeHTML(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  targetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(targetForm);
+    const headersText = headersTextarea.value.trim();
+    let headers = null;
+    if (headersText) {
+      try { headers = JSON.parse(headersText); }
+      catch (err) {
+        return setMessage(targetResult, `Headers JSON invalide&nbsp;: ${escapeHTML(err.message)}`, 'err');
+      }
+    }
+    const body = {
+      name: formData.get('name'),
+      target_type: formData.get('target_type'),
+      endpoint_url: formData.get('endpoint_url'),
+      headers: headers,
+      request_template: formData.get('request_template') || null,
+      response_path: formData.get('response_path') || null,
+      model_name: formData.get('model_name') || null,
+    };
+    const resp = await fetch('/api/targets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      const detail = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail);
+      return setMessage(targetResult, `Échec création&nbsp;: ${escapeHTML(detail)}`, 'err');
+    }
+    currentTargetId = data.id;
+    scanTargetIdInput.value = data.id;
+    setMessage(targetResult,
+      `Cible <code class="bg-gray-100 px-1 rounded">#${data.id}</code> créée. ` +
+      `<code class="bg-gray-100 px-1 rounded">has_auth=${data.has_auth}</code>. ` +
+      `Cliquez sur "Tester la connexion" pour valider.`, 'ok');
+    testBtn.disabled = false;
+    testBtn.className = 'flex-1 bg-midnight text-white py-2 rounded-lg text-sm font-medium hover:bg-black transition';
+    headersTextarea.value = '';  // ne pas réafficher le secret
+  });
+
+  testBtn.addEventListener('click', async () => {
+    if (!currentTargetId) return;
+    testBtn.disabled = true;
+    setMessage(targetResult, 'Test en cours…', 'info');
+    const resp = await fetch(`/api/targets/${currentTargetId}/test`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const data = await resp.json();
+    testBtn.disabled = false;
+    if (data.ok) {
+      setMessage(targetResult,
+        `Connexion OK (HTTP ${data.status_code}, ${data.latency_ms}&nbsp;ms). ` +
+        `Échantillon&nbsp;: <em>${escapeHTML((data.sample_response || '').slice(0, 120))}…</em>`, 'ok');
+      scanSection.classList.remove('opacity-50', 'pointer-events-none');
+      launchBtn.disabled = !consentCheckbox.checked;
+    } else {
+      setMessage(targetResult,
+        `Échec connexion&nbsp;: HTTP ${data.status_code ?? 'N/A'} — ${escapeHTML(data.error || '')}`, 'err');
+    }
+  });
+
+  scanForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentTargetId || !consentCheckbox.checked) return;
+    const formData = new FormData(scanForm);
+    const selected = formData.getAll('selected_categories');
+    if (selected.length === 0) {
+      return setMessage(scanResult, 'Sélectionnez au moins une catégorie.', 'err');
+    }
+    const body = {
+      target_id: currentTargetId,
+      selected_categories: selected,
+      max_attempts_per_category: Number(formData.get('max_attempts_per_category')),
+    };
+    launchBtn.disabled = true;
+    launchBtn.textContent = 'Lancement…';
+    const resp = await fetch('/api/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      launchBtn.disabled = false;
+      launchBtn.textContent = 'Lancer le scan';
+      return setMessage(scanResult, `Échec création scan&nbsp;: ${escapeHTML(JSON.stringify(data.detail))}`, 'err');
+    }
+    window.location.href = `/scans/${data.id}/live`;
+  });
+})();
+</script>
+{% endblock %}
