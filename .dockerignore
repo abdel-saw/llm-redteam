@@ -1,0 +1,61 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+*.egg
+.python-version
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+.coverage.*
+.tox
+
+# Virtual envs
+.venv
+venv
+env
+ENV
+
+# Local data
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+reports/
+docs/screenshots/*.png
+
+# Documentation and academic deliverables (not needed in the image)
+docs/
+rapport_latex/
+*.md
+!scripts/demo_target/README.md
+
+# Tests
+backend/tests/
+scripts/demo_target/tests/
+scripts/regenerate_screenshots.py
+scripts/take_screenshots.py
+scripts/demo_e2e_report.py
+scripts/validate_*.py
+
+# IDE/OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# CI / Docker artifacts
+.github/
+Dockerfile
+docker-compose.yml
+.dockerignore

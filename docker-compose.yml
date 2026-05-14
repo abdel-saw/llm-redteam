@@ -1,0 +1,40 @@
+# Dev orchestration: Red-Agent-S + InternalLegalBot demo target.
+# Production-like (non-root user, healthcheck, persistent volumes) but
+# tuned for local iteration (port 8000 published, GROQ_API_KEY taken
+# from host env or .env).
+
+services:
+  red-agent-s:
+    build:
+      context: .
+    image: red-agent-s:dev
+    container_name: red-agent-s
+    ports:
+      - "8000:7860"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - DATABASE_URL=sqlite:////data/red-agent-s.db
+      - REPORTS_DIR=/app/reports
+      - APP_ENV=prod
+    volumes:
+      - ./reports:/app/reports
+      - red-agent-data:/data
+    depends_on:
+      - demo-target
+    restart: unless-stopped
+
+  demo-target:
+    build:
+      context: ./scripts/demo_target
+    image: red-agent-s-demo-target:dev
+    container_name: red-agent-s-demo-target
+    ports:
+      - "8765:8765"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - DEMO_TARGET_PORT=8765
+    restart: unless-stopped
+
+volumes:
+  red-agent-data:
