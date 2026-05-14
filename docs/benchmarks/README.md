@@ -1,6 +1,6 @@
 # Benchmarks
 
-Résultats bruts de scans LLM-RT, exportés en JSON via
+Résultats bruts de scans Red-Agent-S, exportés en JSON via
 `GET /api/scans/{id}` puis sérialisés sur disque par
 `scripts/validate_retry_429.py`.
 
@@ -9,7 +9,7 @@ Résultats bruts de scans LLM-RT, exportés en JSON via
 | Paramètre | Valeur |
 |---|---|
 | Date | 2026-05-13 |
-| Outil | LLM-RT, branche `main`, commit `f1bb9ab` (avant fix 204+429) |
+| Outil | Red-Agent-S, branche `main`, commit `f1bb9ab` (avant fix 204+429) |
 | Attaquant | `llama-3.3-70b-versatile` via Groq |
 | Juge sémantique | `llama-3.3-70b-versatile` via Groq |
 | Safety classifier | `openai/gpt-oss-safeguard-20b` via Groq, mode `policy` |

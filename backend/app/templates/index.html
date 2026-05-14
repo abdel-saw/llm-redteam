@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}LLM-RT — Configurer un scan{% endblock %}
+{% block title %}Red-Agent-S — Configuration{% endblock %}
 
 {% block content %}
 <section class="mb-10">
-  <h1 class="text-3xl font-bold mb-2">Agent autonome de Red Teaming pour LLM</h1>
+  <h1 class="text-3xl font-bold mb-2">Autonomous Red Teaming Agent for LLM Applications</h1>
   <p class="text-gray-600 max-w-3xl">
     Configurez une cible LLM, lancez un scan d'attaques alignées sur l'OWASP LLM Top&nbsp;10,
-    et observez les tentatives en temps réel. Chaque réponse est jugée par un modèle juge
-    sémantique combiné à Llama&nbsp;Guard.
+    et observez les tentatives en temps réel. Chaque réponse est jugée par un modèle sémantique
+    couplé à un classifieur de sécurité (GPT-OSS-Safeguard, policy-based).
   </p>
 </section>
 

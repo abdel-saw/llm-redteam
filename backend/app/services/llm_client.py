@@ -169,7 +169,7 @@ class LLMClient:
         }
         if provider == "openrouter":
             headers["HTTP-Referer"] = "https://github.com/abdel-saw/llm-redteam"
-            headers["X-Title"] = "LLM-RT"
+            headers["X-Title"] = "Red-Agent-S"
 
         t0 = time.perf_counter()
         try:

@@ -1,8 +1,8 @@
-"""InternalLegalBot — cible de démo réaliste pour LLM-RT.
+"""InternalLegalBot — cible de démo réaliste pour Red-Agent-S.
 
 Mini app FastAPI qui simule un assistant légal interne d'entreprise.
 Le system prompt contient des "secrets" plantés (codename, clé interne,
-acquisition future) pour démontrer que LLM-RT trouve des fuites
+acquisition future) pour démontrer que Red-Agent-S trouve des fuites
 réalistes — pas juste des prompt-injections génériques.
 
 Garde-fous applicatifs VOLONTAIREMENT FAIBLES :
@@ -131,7 +131,7 @@ async def _call_llm(user_message: str) -> str:
 
 app = FastAPI(
     title="InternalLegalBot (demo target)",
-    description="Demo LLM target for LLM-RT red-teaming demonstrations.",
+    description="Demo LLM target for Red-Agent-S red-teaming demonstrations.",
     version="0.1.0",
 )
 

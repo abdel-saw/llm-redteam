@@ -1,4 +1,4 @@
-"""Énumérations centralisées du domaine LLM-RT.
+"""Énumérations centralisées du domaine Red-Agent-S.
 
 Toutes les énumérations héritent de `(str, Enum)` pour que :
 - les valeurs soient sérialisables JSON sans converter custom ;

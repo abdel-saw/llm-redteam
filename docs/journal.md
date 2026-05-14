@@ -1,8 +1,41 @@
-# Journal de bord — LLM-RT
+# Journal de bord — Red-Agent-S
 
 Décisions techniques notables et incidents au cours du développement du
 PFE (Master RSI, FST Settat). Format : entrées datées en ordre
 anti-chronologique.
+
+---
+
+## 2026-05-14 — Rebranding LLM-RT → Red-Agent-S (v0.2.0)
+
+Le projet change de nom pour la soutenance et le packaging final :
+**Red-Agent-S**, sous-titré *"Autonomous Red Teaming Agent for LLM
+Applications"*. La référence S-class (manga / shōnen) reste implicite —
+le sous-titre fait le travail d'explication pour un public extérieur.
+
+Le rebranding cible précisément :
+
+- Les éléments de marque visibles à l'utilisateur (header HTML, footer,
+  titres de page, en-tête du rapport, badge de logo).
+- Les métadonnées système (`settings.app_name`, `settings.app_tagline`,
+  `FastAPI(title=..., description=..., version=...)`, frontmatter HF
+  Space).
+- Le journal et les benchmarks (références produit, pas les noms de
+  branches/commits historiques).
+
+Volontairement NON modifié :
+
+- Le terme technique "LLM red teaming" reste partout — c'est une
+  discipline, pas un nom de produit.
+- Le nom de repo `llm-redteam` côté GitHub : changer de slug
+  casserait les liens, le rapport LaTeX, les références dans les
+  benchmarks. Le sous-domaine HF Space sera `red-agent-s` ; le repo
+  GitHub reste tel quel pour conserver l'historique git.
+- Les docstrings de fichiers internes qui parlent de "Red Teaming" sans
+  référence directe au produit.
+
+Bump version `0.1.0` → `0.2.0` dans `config.py` et exposée via le
+endpoint `/healthz` ainsi que dans l'en-tête du rapport HTML.
 
 ---
 

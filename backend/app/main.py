@@ -31,12 +31,18 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="LLM-RT",
-    description="Agent autonome de Red Teaming pour applications LLM.",
-    version="0.1.0",
+    title=settings.app_name,
+    description=settings.app_tagline,
+    version=settings.app_version,
     debug=settings.is_dev,
     lifespan=lifespan,
 )
+
+
+@app.get("/healthz", include_in_schema=False)
+async def healthz() -> dict:
+    """Endpoint de liveness — utilisé par Docker HEALTHCHECK et HF Space."""
+    return {"status": "ok", "version": settings.app_version, "name": settings.app_name}
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

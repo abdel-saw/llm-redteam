@@ -1,8 +1,8 @@
 """Orchestrateur de démo : lance la cible InternalLegalBot, attend
 qu'elle réponde, puis affiche les URLs / valeurs pour configurer
-LLM-RT côté UI.
+Red-Agent-S côté UI.
 
-Reste en avant-plan jusqu'à Ctrl+C. Le serveur LLM-RT principal doit
+Reste en avant-plan jusqu'à Ctrl+C. Le serveur Red-Agent-S principal doit
 être lancé séparément (cf. README).
 """
 
@@ -39,7 +39,7 @@ BANNER = """
 
   Health check:  {health}
 
-  Configure LLM-RT (http://127.0.0.1:8000) with EITHER:
+  Configure Red-Agent-S (http://127.0.0.1:8000) with EITHER:
 
   [Option A: json_custom]
     name              : Demo InternalLegalBot (json)

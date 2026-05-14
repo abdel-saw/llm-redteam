@@ -373,4 +373,4 @@ class TestReportEndpoints:
         assert r.status_code == 200
         cd = r.headers.get("content-disposition", "")
         assert cd.startswith("attachment")
-        assert f"llm-rt-scan-{scan_id}-report.html" in cd
+        assert f"red-agent-s-scan-{scan_id}-report.html" in cd

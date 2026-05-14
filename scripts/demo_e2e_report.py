@@ -1,4 +1,4 @@
-"""Demo end-to-end : configure la cible InternalLegalBot dans LLM-RT,
+"""Demo end-to-end : configure la cible InternalLegalBot dans Red-Agent-S,
 lance un scan complet (5 cat x 4 attempts = 20 tentatives), attend la
 fin, capture 3 screenshots du rapport via Chrome headless et verifie
 que les 3 secrets plantes n'apparaissent PAS dans le HTML final.
@@ -43,7 +43,7 @@ def find_browser() -> str:
 
 
 def shoot(browser: str, url: str, out_path: Path, *, w: int = 1440, h: int = 1100):
-    user_data = Path(os.environ["TEMP"]) / f"llm-rt-shot-{os.getpid()}"
+    user_data = Path(os.environ["TEMP"]) / f"red-agent-s-shot-{os.getpid()}"
     args = [
         browser,
         "--headless=new", "--disable-gpu", "--hide-scrollbars",

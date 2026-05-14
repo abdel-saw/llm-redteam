@@ -108,10 +108,10 @@ async def scan_report_download(scan_id: int, db: Session = Depends(get_db)):
     return FileResponse(
         path=report.html_path,
         media_type="text/html",
-        filename=f"llm-rt-scan-{scan_id}-report.html",
+        filename=f"red-agent-s-scan-{scan_id}-report.html",
         headers={
             "Content-Disposition":
-                f'attachment; filename="llm-rt-scan-{scan_id}-report.html"',
+                f'attachment; filename="red-agent-s-scan-{scan_id}-report.html"',
         },
     )
 

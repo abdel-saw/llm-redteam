@@ -44,7 +44,15 @@ class Settings(BaseSettings):
 
     # --- Environnement ---
     app_env: Literal["dev", "prod"] = Field(default="dev")
-    app_version: str = Field(default="0.1.0")
+    app_version: str = Field(default="0.2.0")
+    app_name: str = Field(default="Red-Agent-S")
+    app_tagline: str = Field(
+        default="Autonomous Red Teaming Agent for LLM Applications"
+    )
+    app_deployed: bool = Field(
+        default=False,
+        description="Vrai côté Hugging Face Space pour afficher la bannière démo publique.",
+    )
 
     @property
     def is_dev(self) -> bool:

@@ -50,7 +50,7 @@ def load_env_value(key: str) -> str | None:
 
 
 def shoot(browser: str, url: str, out_path: Path, *, width: int = 1440, height: int = 900):
-    user_data = Path(os.environ["TEMP"]) / f"llm-rt-shot-{os.getpid()}"
+    user_data = Path(os.environ["TEMP"]) / f"red-agent-s-shot-{os.getpid()}"
     args = [
         browser,
         "--headless=new",
