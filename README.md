@@ -1,3 +1,15 @@
+---
+title: Red-Agent-S
+emoji: 🛡️
+colorFrom: red
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Autonomous Red Teaming Agent for LLM Applications
+---
+
 # Red-Agent-S
 
 *Autonomous Red Teaming Agent for LLM Applications*

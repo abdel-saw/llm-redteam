@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..config import get_settings
 from ..database import get_db
 from ..enums import AttackCategory
 from ..models import Report, Scan, Target
@@ -33,10 +34,15 @@ CATEGORY_LABELS: dict[str, str] = {
 
 @router.get("/", response_class=HTMLResponse)
 async def index(request: Request):
+    s = get_settings()
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"category_labels": CATEGORY_LABELS},
+        {
+            "category_labels": CATEGORY_LABELS,
+            "app_deployed": s.app_deployed,
+            "app_version": s.app_version,
+        },
     )
 
 
