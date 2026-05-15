@@ -6,6 +6,46 @@ anti-chronologique.
 
 ---
 
+## 2026-05-15 — Décision : déploiement HF Space abandonné pour le MVP
+
+Le déploiement public sur Hugging Face Space, initialement listé
+comme livrable de l'étape de packaging, est **abandonné pour le MVP**.
+
+**Blocages rencontrés** :
+
+- **Politique Xet sur les binaires** : HF Hub bascule progressivement
+  vers Xet pour le stockage, et les PNG des `docs/screenshots/` (~250 Ko
+  chacun) ont déclenché des refus et des renvois entre les deux backends
+  selon la branche utilisée. L'effort pour discipliner le dépôt côté
+  Xet (LFS pointers, exclusion sélective des binaires via `.gitattributes`
+  sur la branche `hf-deploy`) devenait disproportionné.
+- **Coexistence des historiques** : maintenir deux histoires git
+  parallèles (la "vraie" sur GitHub et une variante slimmée pour HF)
+  imposait à chaque push de double-stager, double-tester, double-tagger,
+  pour une démo CPU-basic qui se met en pause après 48 h d'inactivité
+  de toute façon.
+
+**Choix pragmatique** : on stoppe, on garde GitHub comme livrable
+public unique, et on documente le déploiement public (HF Space /
+Railway / Fly.io) comme **évolution future** dans la roadmap du
+README et dans le chapitre "Perspectives" du rapport.
+
+**Conséquences** :
+
+- Branche `hf-deploy` supprimée localement, remote `hf` retiré.
+- Fichier `HF_SPACE_DEPLOY.md` supprimé.
+- Frontmatter HF (sdk: docker, app_port, etc.) retiré du début du
+  README — le README commence directement par `# Red-Agent-S`.
+- Variable d'env `APP_DEPLOYED` + bannière "Démo publique" du
+  template `index.html` retirées (code mort sans déploiement
+  public actif). À réintroduire en 3 lignes si un déploiement
+  public est ressuscité plus tard.
+- Le projet reste **pleinement fonctionnel en local** (uvicorn,
+  pytest 113/113) et **via Docker** (`docker compose up` →
+  red-agent-s + demo-target healthy).
+
+---
+
 ## 2026-05-15 — CI GitHub Actions retiré temporairement
 
 Le workflow `.github/workflows/ci.yml` faisait échouer 4 tests

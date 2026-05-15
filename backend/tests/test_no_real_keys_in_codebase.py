@@ -59,7 +59,6 @@ SKIP_SUFFIXES = {
 # in code blocks is fine because each occurrence carries a whitelist
 # token by convention.
 DOC_PATHS = {
-    "HF_SPACE_DEPLOY.md",
     "CONTRIBUTING.md",
     ".githooks/pre-commit",
     ".githooks/pre-commit.ps1",

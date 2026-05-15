@@ -48,7 +48,7 @@ app = FastAPI(
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz() -> dict:
-    """Endpoint de liveness — utilisé par Docker HEALTHCHECK et HF Space."""
+    """Endpoint de liveness — utilisé par le Docker HEALTHCHECK."""
     return {"status": "ok", "version": settings.app_version, "name": settings.app_name}
 
 STATIC_DIR.mkdir(parents=True, exist_ok=True)

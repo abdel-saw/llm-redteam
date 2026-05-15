@@ -1,15 +1,3 @@
----
-title: Red-Agent-S
-emoji: 🛡️
-colorFrom: red
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
-short_description: Autonomous Red Teaming Agent for LLM Applications
----
-
 # Red-Agent-S
 
 *Autonomous Red Teaming Agent for LLM Applications*
@@ -94,17 +82,6 @@ Le hook `.githooks/pre-commit` scanne le diff stagé à chaque
 d'API (Groq, OpenAI, Anthropic, OpenRouter, AWS, GitHub PAT, Bearer
 tokens). Voir [`CONTRIBUTING.md`](CONTRIBUTING.md) section *Security*
 pour les détails et les conventions de fixture.
-
-### Option C — Démo en ligne
-
-Une instance publique tourne sur Hugging Face Space :
-**`https://huggingface.co/spaces/abdel-saw/red-agent-s`** *(lien actif
-une fois le déploiement terminé — cf. `HF_SPACE_DEPLOY.md`)*.
-
-> Le free tier HF Space met le Space en pause après 48 h d'inactivité.
-> Le premier visiteur après une pause peut attendre 30–60 s pour le
-> cold-start. Pour une démo lors d'une soutenance : pinger le Space
-> 1 h avant pour le réveiller.
 
 ---
 
@@ -220,7 +197,7 @@ via `httpx.ASGITransport`, et la base SQLite est isolée dans
 - **Dépendance API externe** : Groq (et OpenRouter en fallback) — quotas et tarifs s'appliquent. Le free tier Groq plafonne à 6 000–12 000 tokens/min sur les modèles utilisés.
 - **Verdicts du juge automatiques** : il s'agit d'estimations LLM, à vérifier humainement avant action sur un système en production. Faux positifs et négatifs possibles, surtout en catégorie *misinformation*.
 - **Hardware-bound** : pas de fine-tuning local prévu dans le MVP — l'attaquant et le juge utilisent des modèles pré-entraînés via API distante.
-- **Hugging Face Space free tier** : la base SQLite est éphémère (effacée au restart du Space). Acceptable pour démonstrations, pas pour des audits suivis.
+- **Pas de déploiement public actif** : l'instance vit en local ou via Docker. Le déploiement public (HF Space / Railway / Fly.io) est documenté comme évolution future dans la Roadmap ci-dessous.
 
 ---
 
@@ -232,7 +209,7 @@ via `httpx.ASGITransport`, et la base SQLite est isolée dans
 - **Comparaison historique** entre scans (régression de sécurité sur un même endpoint).
 - **Mode CI/CD** : lancement en pipeline avec seuil de robustesse configurable, sortie JSON pour intégration GitOps.
 - Plus d'adapters de cibles : Anthropic Messages API natif, Vertex AI, Bedrock.
-- Stockage persistant côté Space (option payante HF).
+- **Déploiement public** (Hugging Face Space, Railway, Fly.io) avec stockage persistant et bannière de démo.
 
 ---
 

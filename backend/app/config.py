@@ -36,11 +36,11 @@ class Settings(BaseSettings):
     )
 
     # --- Persistance ---
-    # Chemin absolu par défaut : cohérent entre dev local (le dossier
-    # /app/data est créé par le Dockerfile) et déploiement HF Space /
-    # Docker compose (volume monté sur /app/data). Évite le grand
-    # classique `unable to open database file` quand l'utilisateur
-    # non-root ne peut pas écrire dans CWD.
+    # Chemin absolu par défaut : cohérent avec le Dockerfile (qui crée
+    # /app/data avec chown 1000 avant USER user) et avec docker-compose
+    # (volume monté sur /app/data). Évite le grand classique
+    # `unable to open database file` quand l'utilisateur non-root ne
+    # peut pas écrire dans CWD. En dev local, override via `.env`.
     database_url: str = Field(default="sqlite:////app/data/red-agent-s.db")
     reports_dir: str = Field(
         default="/app/reports",
@@ -53,10 +53,6 @@ class Settings(BaseSettings):
     app_name: str = Field(default="Red-Agent-S")
     app_tagline: str = Field(
         default="Autonomous Red Teaming Agent for LLM Applications"
-    )
-    app_deployed: bool = Field(
-        default=False,
-        description="Vrai côté Hugging Face Space pour afficher la bannière démo publique.",
     )
 
     @property

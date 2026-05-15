@@ -2,18 +2,6 @@
 {% block title %}Red-Agent-S — Configuration{% endblock %}
 
 {% block content %}
-{% if app_deployed %}
-<div class="bg-yellow-50 border border-yellow-300 text-yellow-900 rounded-lg px-4 py-3 mb-6 text-sm flex items-start gap-3" role="status">
-  <span class="text-lg leading-none">⚠️</span>
-  <div>
-    <strong class="font-semibold">Démo publique.</strong>
-    Les cibles enregistrées, scans et rapports peuvent être effacés à
-    tout moment et la base de données est éphémère sur Hugging Face
-    Space (free tier). Pour un usage durable,
-    <a class="underline hover:text-yellow-700" href="https://github.com/abdel-saw/llm-redteam">déployez votre propre instance</a>.
-  </div>
-</div>
-{% endif %}
 <section class="mb-10">
   <h1 class="text-3xl font-bold mb-2">Autonomous Red Teaming Agent for LLM Applications</h1>
   <p class="text-gray-600 max-w-3xl">
