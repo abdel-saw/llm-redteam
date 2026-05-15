@@ -83,8 +83,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env       # renseigner GROQ_API_KEY
 
+# Active le pre-commit hook (à faire après chaque clone)
+git config core.hooksPath .githooks
+
 uvicorn backend.app.main:app --reload
 ```
+
+Le hook `.githooks/pre-commit` scanne le diff stagé à chaque
+`git commit` et refuse les valeurs ressemblant à de vraies clés
+d'API (Groq, OpenAI, Anthropic, OpenRouter, AWS, GitHub PAT, Bearer
+tokens). Voir [`CONTRIBUTING.md`](CONTRIBUTING.md) section *Security*
+pour les détails et les conventions de fixture.
 
 ### Option C — Démo en ligne
 

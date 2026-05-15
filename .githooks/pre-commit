@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Pre-commit hook for Red-Agent-S.
+#
+# Scans the *staged* diff (added lines only) for accidentally committed
+# API keys. Refuses the commit with a clear error if a real-looking
+# secret is found and the line does not include a whitelist marker.
+#
+# Bypass (use only when you're certain):  git commit --no-verify
+#
+# Whitelist tokens — case-insensitive substring match on the offending
+# line. Use one of these inside the value when intentionally adding a
+# test fixture that resembles a real key:
+#     FAKER, REDACTED, EXAMPLE, DUMMY, PLACEHOLDER, xxxxx, TEST_, test_, fake
+
+set -uo pipefail
+
+readonly SECRET_PATTERNS=(
+    'gsk_[A-Za-z0-9]{30,}'
+    'sk-[A-Za-z0-9]{30,}'
+    'sk-or-v1-[A-Za-z0-9]{20,}'
+    'sk-ant-[A-Za-z0-9_-]{20,}'
+    'AKIA[0-9A-Z]{16}'
+    'ghp_[A-Za-z0-9]{36}'
+    'Bearer [A-Za-z0-9._-]{40,}'
+)
+readonly WHITELIST_REGEX='FAKER|REDACTED|EXAMPLE|DUMMY|PLACEHOLDER|xxxxx|TEST_|test_|fake'
+
+mask_preview() {
+    local value="$1"
+    local len=${#value}
+    if [ "$len" -le 12 ]; then
+        printf '%s' "$value"
+    else
+        printf '%s…%s' "${value:0:6}" "${value: -4}"
+    fi
+}
+
+scan_file() {
+    local file="$1"
+    local diff_output
+    diff_output=$(git diff --cached -- "$file" 2>/dev/null) || return 0
+    # Git itself marks binary files. Skip them.
+    if printf '%s\n' "$diff_output" | head -n 5 | grep -q '^Binary files'; then
+        return 0
+    fi
+
+    # Only the lines starting with `+` are new content (excluding the
+    # `+++` header line).
+    local added_lines
+    added_lines=$(printf '%s\n' "$diff_output" | grep '^+' | grep -v '^+++' || true)
+    if [ -z "$added_lines" ]; then
+        return 0
+    fi
+
+    local file_found=0
+    local pattern
+    for pattern in "${SECRET_PATTERNS[@]}"; do
+        local match_lines
+        match_lines=$(printf '%s\n' "$added_lines" | grep -E "$pattern" || true)
+        if [ -z "$match_lines" ]; then
+            continue
+        fi
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            if printf '%s' "$line" | grep -qiE "$WHITELIST_REGEX"; then
+                continue
+            fi
+            local matched
+            matched=$(printf '%s' "$line" | grep -oE "$pattern" | head -n 1)
+            local preview
+            preview=$(mask_preview "$matched")
+            printf '❌ Potential secret detected in %s\n' "$file" >&2
+            printf '   Pattern: %s\n' "$pattern" >&2
+            printf '   Match preview: %s\n' "$preview" >&2
+            printf '   Offending line (truncated): %.120s\n' "${line:1}" >&2
+            printf '   If intentional (test fixture), include FAKER, REDACTED,\n' >&2
+            printf '   EXAMPLE, DUMMY, PLACEHOLDER, TEST_, or "fake" in the value.\n\n' >&2
+            file_found=1
+        done <<< "$match_lines"
+    done
+
+    return "$file_found"
+}
+
+main() {
+    local files
+    files=$(git diff --cached --name-only --diff-filter=ACM)
+    if [ -z "$files" ]; then
+        exit 0
+    fi
+
+    local total_found=0
+    while IFS= read -r file; do
+        [ -z "$file" ] && continue
+        if ! scan_file "$file"; then
+            total_found=1
+        fi
+    done <<< "$files"
+
+    if [ "$total_found" -ne 0 ]; then
+        printf 'Commit blocked by .githooks/pre-commit.\n' >&2
+        printf 'Run with --no-verify only if you have manually verified that no real key is being committed.\n' >&2
+        exit 1
+    fi
+    exit 0
+}
+
+main "$@"

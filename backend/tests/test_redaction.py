@@ -85,7 +85,8 @@ class TestRedactText:
         assert "gsk_JbaZDE6" not in out
 
     def test_redact_text_anthropic_and_openrouter_prefixes(self):
-        out = redact_text("sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAA1 and sk-or-v1-aaaaaaaaaaaaaaaaaaaa")
+        # FAKER values, on the same line so the codebase scanner whitelist matches.
+        out = redact_text("sk-ant-api03-fakefakefakefakefakefake1 and sk-or-v1-fakefakefakefakefake")
         assert "sk-ant-api03-" not in out
         assert "sk-or-v1-" not in out
 
@@ -203,7 +204,7 @@ class TestTargetEndpointRedaction:
             "target_type": "openai_compatible",
             "endpoint_url": "https://api.example.com/v1",
             "headers": {
-                "Authorization": "Bearer gsk_realgroqkey1234567890abcdefghijkl",
+                "Authorization": "Bearer gsk_FAKERkey1234567890abcdefghijklmnop",
                 "X-Request-Id": "trace-1",
             },
             "model_name": "x",
