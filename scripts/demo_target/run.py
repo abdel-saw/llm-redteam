@@ -14,9 +14,14 @@ import uvicorn
 
 def main() -> int:
     port = int(os.environ.get("DEMO_TARGET_PORT", "8765"))
+    # Default 0.0.0.0 so the demo target is reachable from outside the
+    # container when run via Docker (compose maps 8765:8765). In pure
+    # local dev, override via DEMO_TARGET_HOST=127.0.0.1 for a stricter
+    # bind.
+    host = os.environ.get("DEMO_TARGET_HOST", "0.0.0.0")  # noqa: S104
     uvicorn.run(
         "scripts.demo_target.app:app",
-        host="127.0.0.1",
+        host=host,
         port=port,
         log_level="info",
         reload=False,

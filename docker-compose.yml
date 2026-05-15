@@ -14,12 +14,14 @@ services:
     environment:
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - DATABASE_URL=sqlite:////data/red-agent-s.db
+      # Chemin absolu cohérent avec le Dockerfile (mkdir + chown 1000)
+      # et avec le mount du volume `red-agent-data` ci-dessous.
+      - DATABASE_URL=sqlite:////app/data/red-agent-s.db
       - REPORTS_DIR=/app/reports
       - APP_ENV=prod
     volumes:
       - ./reports:/app/reports
-      - red-agent-data:/data
+      - red-agent-data:/app/data
     depends_on:
       - demo-target
     restart: unless-stopped

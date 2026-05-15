@@ -13,6 +13,7 @@ from .routes import scans as scans_routes
 from .routes import stream as stream_routes
 from .routes import targets as targets_routes
 from .security.log_filter import install_redacting_filter
+from .utils.db_path import emit_startup_db_warnings, ensure_sqlite_dir
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -26,6 +27,12 @@ install_redacting_filter()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Préparation FS AVANT create_all : sinon SQLite échoue avec
+    # "unable to open database file" si le dossier n'existe pas
+    # (cas typique : container Docker non-root + volume non monté).
+    ensure_sqlite_dir(settings.database_url)
+    emit_startup_db_warnings(settings.database_url)
+    Path(settings.reports_dir).mkdir(parents=True, exist_ok=True)
     init_db()
     yield
 

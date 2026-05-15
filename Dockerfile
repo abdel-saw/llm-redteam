@@ -48,13 +48,19 @@ WORKDIR /app
 # venv/.env are kept out via .dockerignore.
 COPY --chown=user:user backend ./backend
 
-# Reports dir must be writable by the non-root user at runtime.
-RUN mkdir -p /app/reports && chown -R user:user /app/reports
+# Data + reports dirs must be writable by the non-root user at runtime.
+# /app/data is the default SQLite location (sqlite:////app/data/red-agent-s.db).
+# When a Docker named volume is mounted on /app/data on first run, the
+# volume inherits the ownership of this pre-existing directory, so the
+# non-root user keeps write access.
+RUN mkdir -p /app/data /app/reports \
+ && chown -R 1000:1000 /app/data /app/reports
 
 USER user
 
 ENV PATH="/home/user/.local/bin:${PATH}" \
     REPORTS_DIR="/app/reports" \
+    DATABASE_URL="sqlite:////app/data/red-agent-s.db" \
     APP_ENV="prod"
 
 EXPOSE 7860

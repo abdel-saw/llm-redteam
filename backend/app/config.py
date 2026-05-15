@@ -36,9 +36,14 @@ class Settings(BaseSettings):
     )
 
     # --- Persistance ---
-    database_url: str = Field(default="sqlite:///./redteam.db")
+    # Chemin absolu par défaut : cohérent entre dev local (le dossier
+    # /app/data est créé par le Dockerfile) et déploiement HF Space /
+    # Docker compose (volume monté sur /app/data). Évite le grand
+    # classique `unable to open database file` quand l'utilisateur
+    # non-root ne peut pas écrire dans CWD.
+    database_url: str = Field(default="sqlite:////app/data/red-agent-s.db")
     reports_dir: str = Field(
-        default="./reports",
+        default="/app/reports",
         description="Dossier d'écriture des rapports HTML générés (un sous-dossier par scan).",
     )
 
