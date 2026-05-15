@@ -122,6 +122,33 @@ fixture to include a whitelist token.
   redundant `"""Return X."""` style on obvious helpers.
 - Comments: explain *why*, not *what*. The code shows what.
 
+## Tooling
+
+This project was developed with the assistance of
+[Claude Code](https://www.claude.com/product/claude-code). Two
+project-level conventions matter:
+
+1. **No AI attribution in git metadata.** The file `.claude/settings.json`
+   sets `includeCoAuthoredBy: false`, which instructs Claude Code to
+   stop adding `Co-Authored-By: Claude <...>` trailers to commit
+   messages. The attribution is acknowledged transparently in the
+   README ("Tooling & Acknowledgments" section) — that's the single
+   source of truth, not the git history. If you fork and re-enable
+   that setting, be aware the commit history is yours and the
+   responsibility for any leaked content is also yours.
+
+2. **AI-generated test code is reviewed for fake secrets** before
+   commit. See the *Security* section above — the pre-commit hook
+   exists specifically because an AI assistant can paste a value that
+   *was* in your context (e.g. your real `.env`) into a fixture. The
+   review checklist:
+
+   ```bash
+   grep -E "gsk_|sk-or-v1-|sk-ant-|Bearer " <generated_file>
+   ```
+
+   and eyeball each match.
+
 ## Commit messages
 
 Conventional-Commits style is preferred:

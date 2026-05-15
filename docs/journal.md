@@ -1,7 +1,7 @@
 # Journal de bord — Red-Agent-S
 
 Décisions techniques notables et incidents au cours du développement du
-PFE (Master RSI, FST Settat). Format : entrées datées en ordre
+PFE (Ingénierie Informatique, FST Settat). Format : entrées datées en ordre
 anti-chronologique.
 
 ---
