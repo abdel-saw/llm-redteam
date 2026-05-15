@@ -188,6 +188,12 @@ Variables d'environnement (cf. `.env.example`) :
 pytest -v --cache-clear
 ```
 
+Les **113 tests** se lancent en local (Python 3.11+, dépendances dans
+`requirements.txt`). Aucune dépendance à un service externe — tous les
+appels LLM sont mockés via `respx`, les endpoints HTTP sont exercés
+via `httpx.ASGITransport`, et la base SQLite est isolée dans
+`tmp_path` par une fixture `autouse` (`backend/tests/conftest.py`).
+
 | Suite | Tests | Couvre |
 |---|---:|---|
 | `test_adapters.py` | 12 | Adapters texte / json_custom / openai_compatible |
@@ -201,9 +207,10 @@ pytest -v --cache-clear
 | `test_sse.py` | 7 | Bus d'événements + endpoint SSE + replay |
 | `test_targets_api.py` | 2 | DELETE 204 strict (intégration ASGI) |
 | `test_report.py` | 11 | Génération HTML autonome + redaction + idempotence + XSS |
-| **Total** | **94** | |
-
-Les tests d'intégration utilisent `httpx.ASGITransport` pour exercer la stack FastAPI/Starlette complète sans réseau. Les appels LLM sont mockés via `respx`.
+| `test_db_path.py` | 12 | Helpers `ensure_sqlite_dir` + warning relatif-in-Docker |
+| `test_no_real_keys_in_codebase.py` | 4 | Scanner secrets sur tout le repo + sanity scanner |
+| `test_pre_commit_hook.py` | 3 | Hook bash en sub-process (subprocess, skip si pas de bash) |
+| **Total** | **113** | |
 
 ---
 
